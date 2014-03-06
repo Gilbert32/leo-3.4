@@ -69,7 +69,7 @@
 #include <mach/board-htcleo-ts.h>
 #include <mach/socinfo.h>
 #include <mach/msm_memtypes.h>
-
+#include <linux/moduleparam.h>
 #include "acpuclock.h"
 #include "board-htcleo.h"
 #include "devices.h"
@@ -83,6 +83,7 @@
 #ifdef CONFIG_ION
 #include <linux/ion.h>
 #endif
+
 
 #define ATAG_MAGLDR_BOOT    0x4C47414D
 struct tag_magldr_entry

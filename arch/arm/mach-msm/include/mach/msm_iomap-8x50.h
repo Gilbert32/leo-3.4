@@ -75,6 +75,8 @@
 #define MSM_SHARED_RAM_SIZE   SZ_1M
 #define MSM_SHARED_RAM_PHYS   0x00100000
 
+#define MSM_VFE_PHYS          0xA0F00000
+#define MSM_VFE_SIZE          SZ_1M
 
 #define MSM_UART1_PHYS        0xA9A00000
 #define MSM_UART1_SIZE        SZ_4K
