@@ -42,8 +42,7 @@ struct fs_driver_data {
 	struct fs_clk_data *clks;
 };
 
-#define FS_GENERIC(_drv_name, _id, _name, _dev_id, _data) \
-(&(struct platform_device){ \
+#define FS_GENERIC(_drv_name, _id, _name) (&(struct platform_device){ \
 	.name	= (_drv_name), \
 	.id	= (_id), \
 	.dev	= { \
@@ -55,14 +54,11 @@ struct fs_driver_data {
 			.num_consumer_supplies = 1, \
 			.consumer_supplies = \
 				&(struct regulator_consumer_supply) \
-				REGULATOR_SUPPLY((_name), (_dev_id)), \
-			.driver_data = (_data), \
+				REGULATOR_SUPPLY((_name), NULL), \
 		} \
 	}, \
 })
-#define FS_PCOM(_id, _name, _dev_id) \
-		FS_GENERIC("footswitch-pcom", _id, _name, _dev_id, NULL)
-#define FS_8X60(_id, _name, _dev_id, _data) \
-		FS_GENERIC("footswitch-8x60", _id, _name, _dev_id, _data)
+#define FS_PCOM(_id, _name) FS_GENERIC("footswitch-pcom", (_id), (_name))
+#define FS_8X60(_id, _name) FS_GENERIC("footswitch-8x60", (_id), (_name))
 
 #endif
