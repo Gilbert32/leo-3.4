@@ -23,10 +23,12 @@
 struct htc_headset_gpio_platform_data {
 	unsigned int uart_gpio;
 	unsigned int hpin_gpio;
+	unsigned int mic_detect_gpio;
 	unsigned int key_gpio;
 	unsigned int key_enable_gpio;
 	unsigned int mic_select_gpio;
 	void (*config_headset_gpio)(void);
+	unsigned int microp_channel;
 };
 
 struct htc_headset_gpio_info {

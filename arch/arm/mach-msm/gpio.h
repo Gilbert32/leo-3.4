@@ -19,5 +19,6 @@ void msm_gpio_exit_sleep(void);
 
 void msm_gpio_find_out(const unsigned gpio, void __iomem **out,
 	unsigned *offset);
+extern void config_gpio_table(uint32_t *table, int len);
 
 #endif

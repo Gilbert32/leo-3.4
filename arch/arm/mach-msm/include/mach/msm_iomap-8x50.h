@@ -85,6 +85,12 @@
 #define MSM_UART3_PHYS        0xA9C00000
 #define MSM_UART3_SIZE        SZ_4K
 
+#define MSM_HSUSB_PHYS        0xA0800000
+#define MSM_HSUSB_SIZE        SZ_4K
+
+#define MSM_I2C_PHYS          0xA9900000
+#define MSM_I2C_SIZE          SZ_4K
+
 #define MSM_MDC_BASE	      IOMEM(0xFA200000)
 #define MSM_MDC_PHYS	      0xAA500000
 #define MSM_MDC_SIZE	      SZ_1M

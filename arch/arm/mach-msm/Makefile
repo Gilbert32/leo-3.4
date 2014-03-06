@@ -191,7 +191,15 @@ endif
 obj-$(CONFIG_MSM_PM) += pm.o
 obj-$(CONFIG_MSM_NOPM) += no-pm.o
 obj-y += pwrtest.o
-
+ifdef CONFIG_FSM9XXX_TLMM
+obj-y   += gpio-fsm9xxx.o
+else
+ifdef CONFIG_MSM_V2_TLMM
+obj-y	+= gpio-v2.o
+else
+obj-y	+= gpio.o
+endif
+endif
 obj-$(CONFIG_MSM_SPM_V1) += spm.o
 obj-$(CONFIG_MSM_SPM_V2) += spm-v2.o spm_devices.o
 
@@ -381,6 +389,7 @@ endif
 ifdef CONFIG_MSM_RPM_SMD
 	obj-$(CONFIG_ARCH_MSM8974) += lpm_levels.o lpm_resources.o
 endif
+
 obj-$(CONFIG_MSM_MPM) += mpm.o
 obj-$(CONFIG_MSM_RPM_STATS_LOG) += rpm_stats.o
 obj-$(CONFIG_MSM_RPM_RBCPR_STATS_LOG) += rpm_rbcpr_stats.o

@@ -77,6 +77,7 @@
 #include "dex_comm.h"
 #include "footswitch.h"
 #include "pm.h"
+#include "gpio.h"
 #include "pm-boot.h"
 
 #ifdef CONFIG_ION
@@ -619,7 +620,7 @@ void msm_hsusb_8x50_phy_reset(void)
 	return;
 }
 
-#if 0
+
 static struct msm_otg_platform_data msm_otg_pdata = {
 	.phy_reset		= msm_hsusb_8x50_phy_reset,
 	.pemp_level		= PRE_EMPHASIS_WITH_20_PERCENT,
@@ -627,15 +628,16 @@ static struct msm_otg_platform_data msm_otg_pdata = {
 	.drv_ampl		= HS_DRV_AMPLITUDE_DEFAULT,
 	.se1_gating		= SE1_GATING_DISABLE,
 };
-#else
+
 static int htcleo_phy_init_seq[] ={0x0C, 0x31, 0x30, 0x32, 0x1D, 0x0D, 0x1D, 0x10, -1};
 
+/*
 static struct msm_otg_platform_data msm_otg_pdata = {
 	.phy_init_seq		= htcleo_phy_init_seq,
 	.mode			= USB_PERIPHERAL,
 	.otg_control		= OTG_PHY_CONTROL,
 };
-#endif
+*/
 
 #if 0
 static struct msm_hsusb_gadget_platform_data msm_gadget_pdata = {
