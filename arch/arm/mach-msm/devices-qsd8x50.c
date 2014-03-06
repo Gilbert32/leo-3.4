@@ -96,7 +96,7 @@ struct platform_device msm_device_uart3 = {
 	.resource	= resources_uart3,
 };
 
-/*
+
 static struct resource msm_uart1_dm_resources[] = {
 	{
 		.start = MSM_UART1DM_PHYS,
@@ -182,7 +182,7 @@ struct platform_device msm_device_uart_dm2 = {
 		.coherent_dma_mask = DMA_BIT_MASK(32),
 	},
 };
-*/
+
 
 #define MSM_I2C_SIZE          SZ_4K
 #define MSM_I2C_PHYS          0xA9900000
