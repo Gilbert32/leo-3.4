@@ -911,9 +911,11 @@ MODULE_PARM_DESC(bdaddr, "bluetooth address");
 static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
 	.rx_wakeup_irq = -1,
 	.inject_rx_on_wakeup = 0,
+
 #ifdef CONFIG_SERIAL_BCM_BT_LPM
-	.exit_lpm_cb = bcm_bt_lpm_exit_lpm_locked,
+//	.exit_lpm_cb = bcm_bt_lpm_exit_lpm_locked,
 #endif
+
 };
 
 #ifdef CONFIG_SERIAL_BCM_BT_LPM
@@ -921,7 +923,7 @@ static struct bcm_bt_lpm_platform_data bcm_bt_lpm_pdata = {
 	.gpio_wake = HTCLEO_GPIO_BT_CHIP_WAKE,
 	.gpio_host_wake = HTCLEO_GPIO_BT_HOST_WAKE,
 	.request_clock_off_locked = msm_hs_request_clock_off,
-	.request_clock_on_locked = msm_hs_request_clock_on_locked,
+	.request_clock_on_locked = msm_hs_request_clock_on,
 };
 
 struct platform_device bcm_bt_lpm_device = {
@@ -1659,7 +1661,7 @@ static struct msm_acpu_clock_platform_data htcleo_clock_data = {
 	.wait_for_irq_khz	= 128000,
 //	.wait_for_irq_khz	= 19200,   // TCXO
 };
-*/
+
 static unsigned htcleo_perf_acpu_table[] = {
 	245000000,
 	576000000,
@@ -1670,6 +1672,7 @@ static struct perflock_platform_data htcleo_perflock_data = {
 	.perf_acpu_table = htcleo_perf_acpu_table,
 	.table_size = ARRAY_SIZE(htcleo_perf_acpu_table),
 };
+*/
 ///////////////////////////////////////////////////////////////////////
 // Reset
 ///////////////////////////////////////////////////////////////////////
