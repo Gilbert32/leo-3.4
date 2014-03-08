@@ -26,7 +26,7 @@
 #include <mach/msm_iomap.h>
 #include <mach/msm_smsm.h>
 #include <mach/proc_comm.h>
-
+#include <mach/../../gpio_hw.h>
 
 
 #if defined(CONFIG_ARCH_MSM7X30)
