@@ -1,4 +1,4 @@
-/* drivers/mtd/devices/htcleo-nand.c
+/* drivers/mtd/devices/htcleo_nand.c
 *
 * Copyright (C) 2007 Google, Inc.
 *
@@ -41,8 +41,6 @@
 #include <mach/dma.h>
 #include <mach/board-htcleo-mac.h>
 
-unsigned crci_mask;
-
 #if defined(CONFIG_ARCH_MSM7X30)
 #define MSM_NAND_BASE 0xA0200000
 #else
@@ -50,6 +48,9 @@ unsigned crci_mask;
 #endif
 
 #include "msm_nand.h"
+#include "../mtdcore.h"
+
+unsigned long msm_nand_phys = MSM_NAND_BASE;
 
 #define MSM_NAND_DMA_BUFFER_SIZE SZ_4K
 #define MSM_NAND_DMA_BUFFER_SLOTS \
@@ -271,7 +272,7 @@ uint32_t flash_read_id(struct msm_nand_chip *chip)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -315,7 +316,7 @@ int flash_read_config(struct msm_nand_chip *chip)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -355,7 +356,7 @@ unsigned flash_rd_reg(struct msm_nand_chip *chip, unsigned addr)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 	rv = dma_buffer->data;
@@ -388,7 +389,7 @@ void flash_wr_reg(struct msm_nand_chip *chip, unsigned addr, unsigned val)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -759,7 +760,7 @@ static int msm_nand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd_oob_o
 
 		dsb();
 		msm_dmov_exec_cmd(
-			chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(
+			chip->dma_channel, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(
 			msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 		dsb();
 
@@ -1373,7 +1374,7 @@ msm_nand_write_oob(struct mtd_info *mtd, loff_t to, struct mtd_oob_ops *ops)
 		dma_buffer->cmdptr = (msm_virt_to_dma(chip, dma_buffer->cmd) >> 3) | CMD_PTR_LP;
 
 		dsb();
-		msm_dmov_exec_cmd(chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
+		msm_dmov_exec_cmd(chip->dma_channel, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 		dsb();
 
 		/* if any of the writes failed (0x10), or there was a
@@ -1585,7 +1586,7 @@ msm_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -1736,7 +1737,7 @@ msm_nand_block_isbad(struct mtd_info *mtd, loff_t ofs)
 				dma_buffer->cmd) >> 3) | CMD_PTR_LP;
 
 	dsb();
-	msm_dmov_exec_cmd(chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
+	msm_dmov_exec_cmd(chip->dma_channel, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -1870,7 +1871,7 @@ void scanmac(struct mtd_info *mtd)
 		       ops.retlen, addr);
 		goto out;
 	}
-	sprintf(nvs_mac_addr, "macaddr=%02x:%02x:%02x:%02x:%02x:%02x\n",
+	sprintf(nvs_mac_addr, "macaddr=%02x:%02x:%02x:%02x:%02x:%02x",
 		iobuf[40],iobuf[41],iobuf[42],iobuf[43],iobuf[44],iobuf[45]);
 	pr_info("Device WiFi MAC Address: %s\n", nvs_mac_addr);
 
@@ -2013,20 +2014,20 @@ int msm_nand_scan(struct mtd_info *mtd, int maxchips)
 	mtd->type = MTD_NANDFLASH;
 	mtd->flags = MTD_CAP_NANDFLASH;
 	/* mtd->ecctype = MTD_ECC_SW; */
-	mtd->erase = msm_nand_erase;
-	mtd->point = NULL;
-	mtd->unpoint = NULL;
-	mtd->read = msm_nand_read;
-	mtd->write = msm_nand_write;
-	mtd->read_oob = msm_nand_read_oob;
-	mtd->write_oob = msm_nand_write_oob;
+	mtd->_erase = msm_nand_erase;
+	mtd->_point = NULL;
+	mtd->_unpoint = NULL;
+	mtd->_read = msm_nand_read;
+	mtd->_write = msm_nand_write;
+	mtd->_read_oob = msm_nand_read_oob;
+	mtd->_write_oob = msm_nand_write_oob;
 	/* mtd->sync = msm_nand_sync; */
-	mtd->lock = NULL;
+	mtd->_lock = NULL;
 	/* mtd->unlock = msm_nand_unlock; */
-	mtd->suspend = msm_nand_suspend;
-	mtd->resume = msm_nand_resume;
-	mtd->block_isbad = msm_nand_block_isbad;
-	mtd->block_markbad = msm_nand_block_markbad;
+	mtd->_suspend = msm_nand_suspend;
+	mtd->_resume = msm_nand_resume;
+	mtd->_block_isbad = msm_nand_block_isbad;
+	mtd->_block_markbad = msm_nand_block_markbad;
 	mtd->owner = THIS_MODULE;
 
 	/* Information provides to HTC SSD HW Info tool */
@@ -2094,10 +2095,13 @@ void msm_nand_release(struct mtd_info *mtd)
 
 #ifdef CONFIG_MTD_PARTITIONS
 	/* Deregister partitions */
-	del_mtd_partitions(mtd);
+	//del_mtd_partitions(mtd);
 #endif
 	/* Deregister the device */
-	del_mtd_device(mtd);
+	//del_mtd_device(mtd);
+	
+	/* just mtd_device_unregister() now */
+	mtd_device_unregister(mtd);
 }
 EXPORT_SYMBOL_GPL(msm_nand_release);
 
@@ -2111,11 +2115,35 @@ struct msm_nand_info {
 	struct msm_nand_chip	msm_nand;
 };
 
+static int setup_mtd_device(struct platform_device *pdev,
+			     struct msm_nand_info *info)
+{
+	int i, err;
+	struct flash_platform_data *pdata = pdev->dev.platform_data;
+
+	if (pdata) {
+		for (i = 0; i < pdata->nr_parts; i++) {
+			pdata->parts[i].offset = pdata->parts[i].offset
+				* info->mtd.erasesize;
+			pdata->parts[i].size = pdata->parts[i].size
+				* info->mtd.erasesize;
+		}
+		err = mtd_device_register(&info->mtd, pdata->parts,
+				pdata->nr_parts);
+	} else {
+		err = mtd_device_register(&info->mtd, NULL, 0);
+	}
+	return err;
+}
+
 static int __devinit msm_nand_probe(struct platform_device *pdev)
 {
 	struct msm_nand_info *info;
 	struct flash_platform_data *pdata = pdev->dev.platform_data;
-	int err, i;
+	int err;
+#ifdef CONFIG_MTD_PARTITIONS
+	int i;
+#endif
 
 	if (pdev->num_resources != 1) {
 		pr_err("invalid num_resources");
@@ -2173,6 +2201,13 @@ static int __devinit msm_nand_probe(struct platform_device *pdev)
 	else if (err <= 0 && pdata && pdata->parts)
 		add_mtd_partitions(&info->mtd, pdata->parts, pdata->nr_parts);
 	else
+#else
+	err = setup_mtd_device(pdev, info);
+	if (err < 0) {
+		pr_err("%s: setup_mtd_device failed with err=%d\n",
+				__func__, err);
+		goto out_free_dma_buffer;
+	}
 #endif
 		err = add_mtd_device(&info->mtd);
 

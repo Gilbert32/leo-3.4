@@ -1299,7 +1299,7 @@ out:
 
 static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 {
-#if 0
+
 	int ret;
 	static bool vbus_is_on;
 
@@ -1335,7 +1335,7 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 		msm_otg_notify_host_mode(motg, on);
 		vbus_is_on = false;
 	}
-#else
+#if 0
 	static bool vbus_is_on;
 
 	if (vbus_is_on == on)
@@ -1887,7 +1887,7 @@ reset_link:
 		queue_work(dev->wq, &dev->sm_work);
 	}
 }
-
+void msm_hsusb_vbus_power(struct msm_otg *motg, bool on);
 static void msm_otg_sm_work(struct work_struct *w)
 {
 	struct msm_otg	*dev = container_of(w, struct msm_otg, sm_work);

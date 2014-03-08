@@ -61,7 +61,11 @@ struct mtd_erase_region_info {
 	uint32_t numblocks;		
 	unsigned long *lockmap;		
 };
-
+typedef enum {
+	MTD_OOB_PLACE,
+	MTD_OOB_AUTO,
+	MTD_OOB_RAW,
+} mtd_oob_mode_t;
 /**
  * struct mtd_oob_ops - oob operation operands
  * @mode:	operation mode
