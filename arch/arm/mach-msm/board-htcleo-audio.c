@@ -27,7 +27,7 @@
 #include "dex_comm.h"
 #include "proc_comm.h"
 #include "pmic.h"
-
+#include "gpio.h"
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 

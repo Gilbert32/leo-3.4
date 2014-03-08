@@ -14,10 +14,10 @@
 #ifndef _HTC_BATTERY_H_
 #define _HTC_BATTERY_H_
 #include <linux/notifier.h>
-#include <linux/device.h>
 #include <linux/power_supply.h>
 #include <mach/htc_battery_common.h>
 
+/* information about the system we're running on */
 extern unsigned int system_rev;
 
 enum batt_ctl_t {
@@ -32,12 +32,14 @@ enum batt_ctl_t {
 	DISABLE_MIN_TAPER
 };
 
+/* This order is the same as htc_power_supplies[]
+ * And it's also the same as htc_cable_status_update()
+ */
 enum {
 	GUAGE_NONE,
 	GUAGE_MODEM,
 	GUAGE_DS2784,
 	GUAGE_DS2746,
-	GAUGE_MAX17050,
 };
 
 enum {
@@ -47,50 +49,28 @@ enum {
 };
 
 enum {
-	MBAT_IN_NO_IRQ = 0,
-	MBAT_IN_LOW_TRIGGER,
-	MBAT_IN_HIGH_TRIGGER,
-};
-
-enum {
 	OPTION_FLAG_BT_DOCK_CHARGE_CTL = 1,
 };
 
-enum htc_batt_rt_attr {
-	HTC_BATT_RT_VOLTAGE = 0,
-	HTC_BATT_RT_CURRENT,
-	HTC_BATT_RT_TEMPERATURE,
-};
-
 struct battery_info_reply {
-	u32 batt_id;		
-	u32 batt_vol;		
-	s32 batt_temp;		
-	s32 batt_current;	
-	u32 level;		
-	u32 charging_source;	
-	u32 charging_enabled;	
-	u32 full_bat;		
-	u32 full_level;		
-	u32 over_vchg;		
-	s32 eval_current;	
-	u32 temp_fault;		
-	u32 overloading_charge; 
-	u32 thermal_temp; 
-	u32 batt_state;
+	u32 batt_id;		/* Battery ID from ADC */
+	u32 batt_vol;		/* Battery voltage from ADC */
+	s32 batt_temp;		/* Battery Temperature (C) from formula and ADC */
+	s32 batt_current;	/* Battery current from ADC */
+	u32 level;		/* formula */
+	u32 charging_source;	/* 0: no cable, 1:usb, 2:AC */
+	u32 charging_enabled;	/* 0: Disable, 1: Enable */
+	u32 full_bat;		/* Full capacity of battery (mAh) */
+	u32 full_level;		/* Full Level */
+	u32 over_vchg;		/* 0:normal, 1:over voltage charger */
+	s32 eval_current;	/* System loading current from ADC */
+	u32 temp_fault;		/* Battery temperature fault */
 };
 
 struct htc_battery_platform_data {
-	int (*func_get_batt_rt_attr)(enum htc_batt_rt_attr attr, int* val);
 	int (*func_show_batt_attr)(struct device_attribute *attr,
 					 char *buf);
-	int (*func_show_htc_extension_attr)(struct device_attribute *attr,
-					 char *buf);
 	int gpio_mbat_in;
-	int gpio_mbat_in_trigger_level;
-	int mbat_in_keep_charging;
-	int mbat_in_unreg_rmt;
-
 	int gpio_usb_id;
 	int gpio_mchg_en_n;
 	int gpio_iset;
@@ -102,14 +82,6 @@ struct htc_battery_platform_data {
 	int (*func_is_support_super_charger)(void);
 	int (*func_battery_charging_ctrl)(enum batt_ctl_t ctl);
 	int (*func_battery_gpio_init)(void);
-	int charger_re_enable;
-	int chg_limit_active_mask;
-	int suspend_highfreq_check_reason;
-	int enable_bootup_voltage;
-	int gpio_hw_chg_led;
-#ifdef CONFIG_CPLD
-	int cpld_hw_chg_led;
-#endif
 };
 
 extern int register_notifier_cable_status(struct notifier_block *nb);
@@ -130,16 +102,8 @@ extern int get_cable_status(void);
 
 extern unsigned int batt_get_status(enum power_supply_property psp);
 
-#if (defined(CONFIG_BATTERY_DS2746) || defined(CONFIG_BATTERY_MAX17050))
-int htc_battery_update_change(int force_update);
-#if (defined(CONFIG_MACH_PRIMODS) || defined(CONFIG_MACH_PROTOU) || defined(CONFIG_MACH_PROTODUG) || defined(CONFIG_MACH_PROTODCG) || defined(CONFIG_MACH_MAGNIDS) || defined(CONFIG_MACH_DUMMY) || defined(CONFIG_MACH_DUMMY) || defined(CONFIG_MACH_DUMMY) || defined(CONFIG_MACH_DUMMY) || defined(CONFIG_MACH_DUMMY) || defined(CONFIG_MACH_DUMMY) || defined(CONFIG_MACH_DUMMY) || defined(CONFIG_MACH_G3U))
-extern int get_batt_id(void); 
-extern void set_smem_chg_avalible(int chg_avalible);
+#ifdef CONFIG_BATTERY_DS2746
+int htc_battery_update_change(void);
 #endif
-extern int get_cable_type(void); 
-#endif
-#ifdef CONFIG_THERMAL_TEMPERATURE_READ
-extern int htc_get_thermal_adc_level(uint32_t *buffer);
-#endif
-extern int unregister_rmt_reboot_notifier(void);
+
 #endif

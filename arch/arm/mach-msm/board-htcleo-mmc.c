@@ -36,7 +36,7 @@
 #include "devices.h"
 #include "proc_comm.h"
 #include "pmic.h"
-
+#include "gpio.h"
 #undef HTCLEO_DEBUG_MMC
 
 static int __init htcleo_disablesdcard_setup(char *str)

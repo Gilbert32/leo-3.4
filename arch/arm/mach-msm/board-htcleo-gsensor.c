@@ -24,6 +24,7 @@
 #include <linux/earlysuspend.h>
 #include <linux/platform_device.h>
 #include <mach/board-htcleo-microp.h>
+#include <linux/module.h>
 
 #define EARLY_SUSPEND_BMA 1
 #define D(x...) printk(KERN_DEBUG "[GSNR][BMA150 SPI] " x)

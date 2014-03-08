@@ -31,7 +31,7 @@
 #include "board-htcleo.h"
 #include "gpio_chip.h"
 #include "proc_comm.h"
-
+#include "gpio.h"
 
 
 

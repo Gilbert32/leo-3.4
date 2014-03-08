@@ -1947,7 +1947,7 @@ MACHINE_START(HTCLEO, "htcleo")
 	.phys_io        = MSM_DEBUG_UART_PHYS,
 	.io_pg_offst    = ((MSM_DEBUG_UART_BASE) >> 18) & 0xfffc,
 #endif
-	.boot_params	= (CONFIG_PHYS_OFFSET + 0x00000100),
+	.atag_offset	= (CONFIG_PHYS_OFFSET + 0x00000100),
 	.fixup		= htcleo_fixup,
 	.map_io		= htcleo_map_io,
     	.reserve	= qsd8x50_reserve,

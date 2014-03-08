@@ -642,7 +642,7 @@ void msm_gpio_find_out(const unsigned gpio, void __iomem **out,
 	*offset = gpio - msm_chip->chip.base;
 }
 
-void config_gpio_table(uint32_t *table, int len)
+static void config_gpio_table(uint32_t *table, int len)
 {
 	int n;
 	unsigned id;

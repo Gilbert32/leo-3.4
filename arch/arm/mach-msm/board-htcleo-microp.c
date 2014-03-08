@@ -42,7 +42,7 @@
 #include <asm/setup.h>
 #include <mach/htc_pwrsink.h>
 #include <mach/board-htcleo-microp.h>
-
+#include <linux/module.h>
 #include "board-htcleo.h"
 
 static uint32_t microp_als_kadc;

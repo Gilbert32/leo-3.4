@@ -233,7 +233,7 @@ static void __exit avs_work_exit(void)
 	destroy_workqueue(kavs_wq);
 }
 
-int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
+int __devinit avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
 {
 	int i;
 

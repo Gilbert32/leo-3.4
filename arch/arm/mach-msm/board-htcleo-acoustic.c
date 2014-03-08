@@ -197,7 +197,7 @@ static long acoustic_ioctl(struct file *file, unsigned int cmd,
 	{
 		unsigned data = 0xE5;
 
-		D("ioctl: ACOUSTIC_UPDATE_ADIE called %d.\n", current->pid);
+//		D("ioctl: ACOUSTIC_UPDATE_ADIE called %d.\n", current->pid);
 
 // CotullaTODO: finish this code. if we need android tables really...
 

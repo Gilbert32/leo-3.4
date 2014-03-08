@@ -30,6 +30,7 @@
 #include <linux/gpio.h>
 #include <mach/msm_iomap.h>
 #include <mach/atmega_microp.h>
+#include <linux/module.h>
 
 //#define DEBUG_LCM
 #ifdef DEBUG_LCM

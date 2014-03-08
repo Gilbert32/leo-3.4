@@ -718,11 +718,11 @@ void msm_clk_dump_debug_info(void);
 #else
 static inline void msm_clk_dump_debug_info(void) {}
 #endif
-
+#if 0
 struct mmc_platform_data;
 int msm_add_sdcc(unsigned int controller,
 		struct mmc_platform_data *plat);
-
+#endif
 void msm_pm_register_irqs(void);
 struct msm_usb_host_platform_data;
 int msm_add_host(unsigned int host,

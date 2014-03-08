@@ -57,3 +57,20 @@ void __devinit acpuclk_register(struct acpuclk_data *data)
 {
 	acpuclk_data = data;
 }
+
+int __devinit acpuclk_init(struct acpuclk_soc_data *soc_data)
+{
+	int rc;
+
+	if (!soc_data->init)
+		return -EINVAL;
+
+	rc = soc_data->init(soc_data);
+	if (rc)
+		return rc;
+
+	if (!acpuclk_data)
+		return -ENODEV;
+
+	return 0;
+}

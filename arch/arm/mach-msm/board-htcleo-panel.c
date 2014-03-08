@@ -33,7 +33,7 @@
 #include "proc_comm.h"
 #include "board-htcleo.h"
 #include "devices.h"
-
+#include "gpio.h"
 
 typedef uint16_t UINT;
 
