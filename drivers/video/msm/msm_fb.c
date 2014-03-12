@@ -1079,7 +1079,11 @@ static struct platform_driver msm_fb_driver = {
 		   .pm = &msm_fb_dev_pm_ops,
 		   },
 };
-
+static BLOCKING_NOTIFIER_HEAD(display_chain_head);
+int register_display_notifier(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_register(&display_chain_head, nb);
+}
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void msmfb_early_suspend(struct early_suspend *h)
 {

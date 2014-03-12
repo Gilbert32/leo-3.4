@@ -2013,10 +2013,10 @@ static void msm_otg_sm_work(struct work_struct *w)
 				queue_work(dev->wq, &dev->notifier_work);
 			}
 
-			if (check_htc_mode_status() != NOT_ON_AUTOBOT) {
-				htc_mode_enable(0);
-				android_switch_default();
-			}
+//			if (check_htc_mode_status() != NOT_ON_AUTOBOT) {
+//				htc_mode_enable(0);
+//				android_switch_default();
+//			}
 			dev->ac_detect_count = 0;
 			del_timer(&dev->ac_detect_timer);
 			
