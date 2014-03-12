@@ -27,7 +27,7 @@
 #include <linux/tick.h>
 
 #define HTC_PM_STATSTIC_DELAY			10000
-
+#if 0
 #ifdef arch_idle_time
 
 static cputime64_t get_idle_time(int cpu)
@@ -103,7 +103,7 @@ uint32_t previous_xo_count = 0;
 uint64_t previous_xo_time = 0;
 uint32_t previous_vddmin_count = 0;
 uint64_t previous_vddmin_time = 0;
-
+#endif
 struct st_htc_idle_statistic {
 	u32 count;
 	u32 time;
@@ -137,7 +137,7 @@ void htc_idle_stat_add(int sleep_mode, u32 time)
 		break;
 	}
 }
-
+#if 0
 void htc_idle_stat_show(u32 total_time)
 {
 	int i = 0;
@@ -371,4 +371,4 @@ void htc_monitor_init(void)
 		INIT_DELAYED_WORK(&htc_pm_delayed_work, htc_pm_monitor_work);
 	}
 }
-
+#endif

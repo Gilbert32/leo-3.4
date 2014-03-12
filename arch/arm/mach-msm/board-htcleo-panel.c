@@ -22,7 +22,7 @@
 #include <linux/leds.h>
 #include <linux/platform_device.h>
 #include <linux/workqueue.h>
-
+#include <linux/spi/spi.h>
 #include <asm/io.h>
 #include <asm/mach-types.h>
 
@@ -36,6 +36,13 @@
 #include "gpio.h"
 
 typedef uint16_t UINT;
+
+#define SPI_CONFIG              (0x00000000)
+#define SPI_IO_CONTROL          (0x00000004)
+#define SPI_OPERATIONAL         (0x00000030)
+#define SPI_ERROR_FLAGS_EN      (0x00000038)
+#define SPI_ERROR_FLAGS         (0x00000034)
+#define SPI_OUTPUT_FIFO         (0x00000100)
 
 struct spi_cmd
 {
@@ -55,9 +62,51 @@ static struct vreg *vreg_lcd;
 
 
 #define LCM_DELAY(a)		msleep(a)
+void __iomem *spi_base;
+struct clk *spi_clk ;
+int qspi_send_16bit(unsigned char id, unsigned data)
+{
+        unsigned err ;
 
-extern int qspi_send_9bit(unsigned char id, unsigned data);
-extern int qspi_send_16bit(unsigned char id, unsigned data);
+        /* bit-5: OUTPUT_FIFO_NOT_EMPTY */
+	clk_enable(spi_clk);
+        while( readl(spi_base+SPI_OPERATIONAL) & (1<<5) )
+        {
+                if( (err=readl(spi_base+SPI_ERROR_FLAGS)) )
+                {
+                        printk("\rERROR:  SPI_ERROR_FLAGS=%d\r", err);
+                        return -1;
+                }
+        }
+
+	writel( (id<<13 | data)<<16, spi_base+SPI_OUTPUT_FIFO );/*AUO*/
+        udelay(1000);
+	clk_disable(spi_clk);
+
+	return 0;
+}
+
+int qspi_send_9bit(unsigned char id, unsigned data)
+{
+        unsigned err ;
+
+        /* bit-5: OUTPUT_FIFO_NOT_EMPTY */
+	clk_enable(spi_clk);
+        while( readl(spi_base+SPI_OPERATIONAL) & (1<<5) )
+        {
+                if( (err=readl(spi_base+SPI_ERROR_FLAGS)) )
+                {
+                        printk("\rERROR:  SPI_ERROR_FLAGS=%d\r", err);
+                        return -1;
+                }
+        }
+
+	writel( ((id<<8) | data)<<23, spi_base+SPI_OUTPUT_FIFO);/*sharp*/
+
+        udelay(1000);
+	clk_disable(spi_clk);
+	return 0;
+}
 extern int qspi_send(unsigned char id, unsigned data);
 
 static DEFINE_MUTEX(panel_lock);

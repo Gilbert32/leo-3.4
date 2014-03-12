@@ -34,7 +34,6 @@
 #include "gpio.h"
 
 
-
 #define TOUCH_TYPE_UNKNOWN  0
 #define TOUCH_TYPE_B8       1
 #define TOUCH_TYPE_68       2
@@ -76,7 +75,6 @@ struct workqueue_struct *htcleo_touch_wq;
 static void htcleo_ts_early_suspend(struct early_suspend *h);
 static void htcleo_ts_late_resume(struct early_suspend *h);
 #endif
-
 
 
 static int I2C_Read(struct htcleo_ts_data *ts, uint8_t dev, uint8_t addr, uint32_t sz, uint8_t* bf)
