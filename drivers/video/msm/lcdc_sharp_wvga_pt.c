@@ -20,7 +20,7 @@
 #ifdef CONFIG_SPI_QSD
 #include <linux/spi/spi.h>
 #endif
-#include <mach/gpio.h>
+#include <mach/gpio-v1.h>
 #include "msm_fb.h"
 
 #ifdef CONFIG_SPI_QSD

@@ -750,4 +750,9 @@ static int __init acpuclk_8x50_init(void)
 {
 	return platform_driver_register(&acpuclk_8x50_driver);
 }
+
+struct acpuclk_soc_data acpuclk_8x50_soc_data __initdata = {
+	.init = acpuclk_8x50_init,
+};
+
 postcore_initcall(acpuclk_8x50_init);

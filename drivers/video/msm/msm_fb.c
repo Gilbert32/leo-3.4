@@ -211,7 +211,7 @@ int msm_fb_cursor(struct fb_info *info, struct fb_cursor *cursor)
 
 static int msm_fb_resource_initialized;
 
-#ifndef CONFIG_FB_BACKLIGHT
+#ifdef CONFIG_FB_BACKLIGHT
 
 #ifdef CONFIG_FB_MSM_CABC_LEVEL_CONTROL
 unsigned long cabc_level_ctl_status = 0;
@@ -636,7 +636,7 @@ static int msm_fb_probe(struct platform_device *pdev)
 	mfd->overlay_play_enable = 1;
 #endif
 
-	bf_supported = mdp4_overlay_borderfill_supported();
+	bf_supported = 0;//mdp4_overlay_borderfill_supported();
 
 	rc = msm_fb_register(mfd);
 	if (rc)

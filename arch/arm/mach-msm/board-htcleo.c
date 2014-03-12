@@ -37,7 +37,7 @@
 #include <linux/ds2746_battery.h>
 #include <linux/msm_kgsl.h>
 #include <linux/regulator/machine.h>
-
+#include <mach/vreg.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -68,6 +68,7 @@
 #include <mach/board-htcleo-microp.h>
 #include <mach/board-htcleo-ts.h>
 #include <mach/socinfo.h>
+#include <mach/rpc_hsusb.h>
 #include <mach/msm_memtypes.h>
 #include <linux/moduleparam.h>
 #include "acpuclock.h"
@@ -415,6 +416,30 @@ int usb_phy_reset(void  __iomem *regs)
 	usb_config_gpio(1);
 
 	return 0;
+}
+
+static struct vreg *vreg_usb;
+static void msm_hsusb_vbus_power(unsigned phy_info, int on)
+{
+
+	switch (PHY_TYPE(phy_info)) {
+	case USB_PHY_INTEGRATED:
+		if (on)
+			msm_hsusb_vbus_powerup();
+		else
+			msm_hsusb_vbus_shutdown();
+		break;
+	case USB_PHY_SERIAL_PMIC:
+		if (on)
+			vreg_enable(vreg_usb);
+		else
+			vreg_disable(vreg_usb);
+		break;
+	default:
+		pr_err("%s: undefined phy type ( %X ) \n", __func__,
+						phy_info);
+	}
+
 }
 
 #define USB_LINK_RESET_TIMEOUT      (msecs_to_jiffies(10))
@@ -1771,7 +1796,6 @@ static void __init reserve_ion_memory(void) {
 #ifdef CONFIG_MSM_MULTIMEDIA_USE_ION
 	qsd8x50_reserve_table[MEMTYPE_EBI0].size += MSM_ION_CAMERA_SIZE;
 	qsd8x50_reserve_table[MEMTYPE_EBI0].size += MSM_ION_AUDIO_SIZE;
-	qsd8x50_reserve_table[MEMTYPE_EBI0].size += MSM_ION_ROTATOR_SIZE;
 	qsd8x50_reserve_table[MEMTYPE_EBI0].size += MSM_ION_SF_SIZE;
 #endif
 }

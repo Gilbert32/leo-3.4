@@ -1297,61 +1297,6 @@ out:
 	return NOTIFY_OK;
 }
 
-static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
-{
-
-	int ret;
-	static bool vbus_is_on;
-
-	if (vbus_is_on == on)
-		return;
-
-	if (motg->pdata->vbus_power) {
-		ret = motg->pdata->vbus_power(on);
-		if (!ret)
-			vbus_is_on = on;
-		return;
-	}
-
-	if (!vbus_otg) {
-		pr_err("vbus_otg is NULL.");
-		return;
-	}
-
-	if (on) {
-		msm_otg_notify_host_mode(motg, on);
-		ret = regulator_enable(vbus_otg);
-		if (ret) {
-			pr_err("unable to enable vbus_otg\n");
-			return;
-		}
-		vbus_is_on = true;
-	} else {
-		ret = regulator_disable(vbus_otg);
-		if (ret) {
-			pr_err("unable to disable vbus_otg\n");
-			return;
-		}
-		msm_otg_notify_host_mode(motg, on);
-		vbus_is_on = false;
-	}
-#if 0
-	static bool vbus_is_on;
-
-	if (vbus_is_on == on)
-		return;
-	if (on) {
-		motg->connect_type = CONNECT_TYPE_INTERNAL;
-		queue_work(motg->wq, &motg->notifier_work);
-		vbus_is_on = true;
-	} else {
-		motg->connect_type = CONNECT_TYPE_CLEAR;
-		queue_work(motg->wq, &motg->notifier_work);
-		vbus_is_on = false;
-	}
-#endif
-}
-
 static int msm_otg_set_host(struct otg_transceiver *xceiv, struct usb_bus *host)
 {
 	struct msm_otg *dev = container_of(xceiv, struct msm_otg, otg);
@@ -1887,7 +1832,22 @@ reset_link:
 		queue_work(dev->wq, &dev->sm_work);
 	}
 }
-void msm_hsusb_vbus_power(struct msm_otg *motg, bool on);
+static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
+{
+	static bool vbus_is_on;
+
+	if (vbus_is_on == on)
+		return;
+	if (on) {
+		motg->connect_type = CONNECT_TYPE_INTERNAL;
+		queue_work(motg->wq, &motg->notifier_work);
+		vbus_is_on = true;
+	} else {
+		motg->connect_type = CONNECT_TYPE_CLEAR;
+		queue_work(motg->wq, &motg->notifier_work);
+		vbus_is_on = false;
+	}
+}
 static void msm_otg_sm_work(struct work_struct *w)
 {
 	struct msm_otg	*dev = container_of(w, struct msm_otg, sm_work);
