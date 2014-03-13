@@ -1920,14 +1920,14 @@ static void __init htcleo_init(void)
 // Bootfunctions
 ///////////////////////////////////////////////////////////////////////
 
-static void __init htcleo_fixup(struct machine_desc *desc, struct tag *tags,
-				 char **cmdline, struct meminfo *mi)
+static void __init htcleo_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
 {
 	/* Blink the camera LED shortly to show that we're alive! */
 	mi->nr_banks = 1;
 	mi->bank[0].start = MSM_EBI1_BANK0_BASE;
 	//mi->bank[0].node = PHYS_TO_NID(MSM_EBI1_BANK0_BASE);
 	mi->bank[0].size = MSM_EBI1_BANK0_SIZE;
+//	*(uint32_t*)0xF800380C |= 0x20;
 }
 
 #if defined(CONFIG_VERY_EARLY_CONSOLE)
@@ -1952,7 +1952,7 @@ static void __init htcleo_allocate_memory_regions(void)
 
 static void __init htcleo_init_early(void)
 {
-	htcleo_allocate_memory_regions();
+//	htcleo_allocate_memory_regions();
 }
 
 static void __init htcleo_map_io(void)
@@ -1988,5 +1988,5 @@ MACHINE_START(HTCLEO, "htcleo")
 	.init_irq	= msm_init_irq,
 	.init_machine	= htcleo_init,
 	.timer		= &msm_timer,
-	.init_early     = htcleo_init_early
+//	.init_early     = htcleo_init_early
 MACHINE_END

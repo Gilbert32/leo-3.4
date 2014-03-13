@@ -92,6 +92,7 @@ void __init msm_map_common_io(void)
 #endif
 	msm_map_io(msm_io_desc, ARRAY_SIZE(msm_io_desc));
 	map_page_strongly_ordered();
+	*(uint32_t*)0xF800380C |= 0x20;
 }
 #endif
 

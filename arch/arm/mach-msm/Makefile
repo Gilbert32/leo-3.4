@@ -16,7 +16,7 @@ ifndef CONFIG_MACH_HTCLEO
 	obj-$(CONFIG_MSM_PROC_COMM) += clock-pcom.o
 endif
 	obj-$(CONFIG_MSM_PROC_COMM) += vreg.o mpp.o
-	ifdef CONFIG_MSM_PROC_COMM
+ifdef CONFIG_MSM_PROC_COMM
 ifndef CONFIG_ARCH_FSM9XXX
 		obj-$(CONFIG_REGULATOR) += footswitch-pcom.o
 endif
@@ -38,10 +38,7 @@ obj-$(CONFIG_ARCH_MSM_SCORPION) += msm_fault_handlers.o
 endif
 
 obj-$(CONFIG_MSM_VIC) += irq-vic.o
-
-ifdef CONFIG_ARCH_QSD8X50
-	obj-$(CONFIG_MSM_SOC_REV_NONE) += acpuclock-8x50.o
-endif
+obj-$(CONFIG_ARCH_QSD8X50) += arch-init-scorpion.o acpuclock-8x50.o
 
 obj-$(CONFIG_SMP) += headsmp.o
 ifdef CONFIG_ARCH_MSM8625
@@ -65,7 +62,7 @@ obj-$(CONFIG_MSM_SMD) += htc_port_list_lte.o
 else
 obj-$(CONFIG_MSM_SMD) += htc_port_list.o
 endif
-
+obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
 quiet_cmd_mkrpcsym = MKCAP   $@
       cmd_mkrpcsym = $(PERL) $(srctree)/$(src)/mkrpcsym.pl $< $@
 
@@ -90,7 +87,7 @@ obj-$(CONFIG_MSM_PIL_DSPS) += pil-dsps.o
 obj-$(CONFIG_MSM_PIL_GSS) += pil-gss.o
 obj-$(CONFIG_MSM_PIL_PRONTO) += pil-pronto.o
 obj-$(CONFIG_MSM_PIL_VENUS) += pil-venus.o
-obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
+
 obj-$(CONFIG_ARCH_FSM9XXX) += sirc-fsm9xxx.o
 obj-$(CONFIG_MSM_FIQ_SUPPORT) += fiq_glue.o
 obj-$(CONFIG_MACH_TROUT) += board-trout-rfkill.o
@@ -180,10 +177,10 @@ obj-$(CONFIG_MSM8X60_AUDIO) += qdsp6v2/
 obj-$(CONFIG_MSM_AUDIO_QDSP6) += qdsp6v2/
 obj-$(CONFIG_MSM_AUDIO_QDSP6V2) += qdsp6v2/
 obj-$(CONFIG_MSM_HW3D) += hw3d.o
+obj-$(CONFIG_MSM_PM2) += pm2.o
 obj-$(CONFIG_PM) += pm-boot.o
 obj-$(CONFIG_MSM_PM8X60) += pm-8x60.o pm-data.o
 obj-$(CONFIG_MSM_IDLE_STATS) += pm-stats.o
-obj-$(CONFIG_MSM_PM2) += pm2.o
 obj-$(CONFIG_MSM_NOPM) += no-pm.o
 obj-y += pwrtest.o
 ifdef CONFIG_FSM9XXX_TLMM
@@ -213,19 +210,19 @@ obj-$(CONFIG_ARCH_MSM8X60) += devices-msm8x60.o clock-local.o clock-8x60.o acpuc
 obj-$(CONFIG_ARCH_MSM8X60) += clock-rpm.o
 obj-$(CONFIG_ARCH_MSM8X60) += saw-regulator.o
 obj-$(CONFIG_ARCH_MSM8X60) += footswitch-8x60.o
-
+obj-$(CONFIG_HTC_BATTCHG) += htc_battery.o
 #Begin HTC LEO
 obj-$(CONFIG_MACH_HTCLEO) += clock-wince.o
-obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-wifi-nvs.o board-htcleo.o board-htcleo-panel.o board-htcleo-keypad.o
+obj-$(CONFIG_MACH_HTCLEO) += board-htcleo.o board-htcleo-panel.o board-htcleo-keypad.o board-htcleo-wifi-nvs.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-ts.o board-htcleo-mmc.o ieee754-df.o
-
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-audio.o board-htcleo-acoustic.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-rfkill.o board-htcleo-wifi.o board-htcleo-microp.o htc_awb_cal.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-proximity.o board-htcleo-ls.o board-htcleo-gsensor.o devices_htc.o msm_flashlight.o
 obj-$(CONFIG_HTCLEO_BACKLIGHT) += board-htcleo-bl.o
 obj-$(CONFIG_HTCLEO_BACKLIGHT_LED) += board-htcleo-bl-led.o
 obj-$(CONFIG_HTCLEO_BTN_BACKLIGHT_MANAGER) += board-htcleo-btn_backlight-manager.o
-
+obj-$(CONFIG_HTC_HEADSET_MGR) += htc_headset_mgr.o
+obj-$(CONFIG_HTC_HEADSET_GPIO) += htc_headset_gpio.o
 ifdef CONFIG_MSM_RPM_REGULATOR
 obj-y += rpm-regulator.o
 obj-$(CONFIG_ARCH_MSM8X60) += rpm-regulator-8660.o
@@ -237,12 +234,11 @@ endif
 
 obj-$(CONFIG_MSM_RPM_REGULATOR_SMD) += rpm-regulator-smd.o
 
-ifdef CONFIG_MSM_SUBSYSTEM_RESTART
-	obj-y += subsystem_notif.o
-	obj-y += subsystem_restart.o
-	obj-y += ramdump.o
-	obj-$(CONFIG_ARCH_MSM8X60) += modem-8660.o lpass-8660.o
-endif
+obj-y += subsystem_notif.o
+obj-y += subsystem_restart.o
+obj-y += ramdump.o
+obj-$(CONFIG_ARCH_MSM8X60) += modem-8660.o lpass-8660.o
+
 obj-$(CONFIG_MSM_SYSMON_COMM) += sysmon.o
 obj-$(CONFIG_MSM_MODEM_8960) += modem-8960.o
 obj-$(CONFIG_MSM_LPASS_8960) += lpass-8960.o
@@ -277,7 +273,6 @@ obj-$(CONFIG_MACH_MSM8X60_DRAGON) += board-msm8x60.o
 obj-$(CONFIG_MACH_TYPE_MSM8X60_FUSION) += board-msm8x60.o mdm.o
 obj-$(CONFIG_MACH_MSM8X60_FUSN_FFA) += board-msm8x60.o mdm.o
 obj-$(CONFIG_TROUT_H2W) += board-trout-h2w.o
-obj-$(CONFIG_HTC_BATTCHG) += htc_battery.o
 obj-$(CONFIG_TROUT_PWRSINK) += htc_pwrsink.o
 obj-$(CONFIG_ARCH_MSM7X27) += clock-pcom-lookup.o
 obj-$(CONFIG_MACH_MSM7X27_SURF) += board-msm7x27.o devices-msm7x27.o
@@ -366,8 +361,6 @@ obj-$(CONFIG_ARCH_FSM9XXX) += board-fsm9xxx.o
 obj-$(CONFIG_TROUT_BATTCHG) += htc_battery.o
 
 obj-$(CONFIG_HTC_PWRSINK) += htc_pwrsink.o
-obj-$(CONFIG_HTC_HEADSET_MGR) += htc_headset_mgr.o
-obj-$(CONFIG_HTC_HEADSET_GPIO) += htc_headset_gpio.o
 obj-$(CONFIG_HTC_HEADSET_MICROP) += htc_headset_microp.o
 obj-$(CONFIG_HTC_HEADSET_PMIC) += htc_headset_pmic.o
 obj-$(CONFIG_HTC_HEADSET_MISC) += htc_headset_misc.o

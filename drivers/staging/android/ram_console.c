@@ -27,6 +27,12 @@
 #include <linux/rslib.h>
 #endif
 
+#ifdef CONFIG_MDM9K_ERROR_CORRECTION
+#include <mach/oem_rapi_client.h>
+#include <linux/wait.h>
+#include <linux/sched.h>
+#endif
+
 struct ram_console_buffer {
 	uint32_t    sig;
 	uint32_t    start;
@@ -34,16 +40,11 @@ struct ram_console_buffer {
 	uint8_t     data[0];
 };
 
-#define HB_SIZE_MAX 0x2000
-
-static void __iomem * hb_ptr = NULL;
-static void __iomem * hb_ptr_last = NULL;
-
-#define RAM_CONSOLE_SIG (0x43474244) 
+#define RAM_CONSOLE_SIG (0x43474244) /* DBGC */
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE_EARLY_INIT
 static char __initdata
-	ram_console_old_log_init_buffer[CONFIG_ANDROID_RAM_CONSOLE_EARLY_SIZE + HB_SIZE_MAX*2];
+	ram_console_old_log_init_buffer[CONFIG_ANDROID_RAM_CONSOLE_EARLY_SIZE];
 #endif
 static char *ram_console_old_log;
 static size_t ram_console_old_log_size;
@@ -60,13 +61,23 @@ static int ram_console_bad_blocks;
 #define ECC_SYMSIZE CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION_SYMBOL_SIZE
 #define ECC_POLY CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION_POLYNOMIAL
 #endif
+#ifdef CONFIG_MDM9K_ERROR_CORRECTION
+#define MDM9K_BUFF_SIZE                 128
+#define MDM9K_CHECK_ERROR               2002
+static int RPC_READY;
+struct rpc_link {
+	struct delayed_work dwork;		/*check RPC ready*/
+	wait_queue_head_t rpcwq;		/*wait until RPC ready*/
+	struct msm_rpc_client *rpc_client;
+};
+#endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION
 static void ram_console_encode_rs8(uint8_t *data, size_t len, uint8_t *ecc)
 {
 	int i;
 	uint16_t par[ECC_SIZE];
-	
+	/* Initialize the parity buffer */
 	memset(par, 0, sizeof(par));
 	encode_rs8(ram_console_rs_decoder, data, len, par, 0);
 	for (i = 0; i < ECC_SIZE; i++)
@@ -148,7 +159,7 @@ ram_console_write(struct console *console, const char *s, unsigned int count)
 static struct console ram_console = {
 	.name	= "ram",
 	.write	= ram_console_write,
-	.flags	= CON_PRINTBUFFER | CON_ENABLED | CON_ANYTIME,
+	.flags	= CON_PRINTBUFFER | CON_ENABLED,
 	.index	= -1,
 };
 
@@ -160,76 +171,7 @@ void ram_console_enable_console(int enabled)
 		ram_console.flags &= ~CON_ENABLED;
 }
 
-static void ram_console_hb_remove_sn(char *hb, size_t hb_size) {
-	#define SN0		"serial number: "
-	#define SN1		"androidboot.serialno="
-	#define SNLEN		12
-	#define SNMASK		"*********"
-	#define SNMASKLEN	9
-
-	char *p = NULL;
-	if (hb && hb_size) {
-		for ( p = hb + 0xd00; p + strlen(SN1) + 12 < hb + hb_size; p++) {
-			if ( strncmp(p, SN0, strlen(SN0)) == 0 ) {
-				p += strlen(SN0);
-				memcpy(p, SNMASK, SNMASKLEN);
-				p += SNLEN;
-			}
-			else if ( strncmp(p, SN1, strlen(SN1)) == 0 ) {
-				p += strlen(SN1);
-				memcpy(p, SNMASK, SNMASKLEN);
-				p += SNLEN;
-				break;
-			}
-		}
-	}
-}
-
-static size_t ram_console_hb_last(char** hb_last) {
-
-	size_t hb_size = 0;
-
-	if (hb_last && hb_ptr_last && *((unsigned int*)hb_ptr_last) == 0xAACCBBDD ) {
-		hb_size = ((0x0000FFFF) & *((unsigned int*)hb_ptr_last + 1 ));
-		if (hb_size > HB_SIZE_MAX) {
-			hb_size = HB_SIZE_MAX;
-		}
-		if (hb_size > 0) {
-			*((char*)hb_ptr_last + hb_size - 1 ) = 0x0;
-			*hb_last = (char*)hb_ptr_last + 12;
-			hb_size = strlen(*hb_last);
-			ram_console_hb_remove_sn(*hb_last, hb_size);
-			return hb_size;
-		}
-	}
-
-	if (hb_last) *hb_last = NULL;
-	return 0;
-}
-
-static size_t ram_console_hb_cur(char** hb_cur) {
-
-	size_t hb_size = 0;
-
-	if (hb_cur && hb_ptr && *((unsigned int*)hb_ptr) == 0xAACCBBDD ) {
-		hb_size = ((0x0000FFFF) & *((unsigned int*)hb_ptr + 1 ));
-		if (hb_size > HB_SIZE_MAX) {
-			hb_size = HB_SIZE_MAX;
-		}
-		if (hb_size > 0) {
-			*((char*)hb_ptr + hb_size - 1 ) = 0x0;
-			*hb_cur = (char*)hb_ptr + 12;
-			hb_size = strlen(*hb_cur);
-			ram_console_hb_remove_sn(*hb_cur, hb_size);
-			return hb_size;
-		}
-	}
-
-	if (hb_cur) *hb_cur = NULL;
-	return 0;
-}
-
-static void __devinit
+static void __init
 ram_console_save_old(struct ram_console_buffer *buffer, const char *bootinfo,
 	char *dest)
 {
@@ -238,11 +180,6 @@ ram_console_save_old(struct ram_console_buffer *buffer, const char *bootinfo,
 	size_t total_size = old_log_size;
 	char *ptr;
 	const char *bootinfo_label = "Boot info:\n";
-
-	size_t hb_size_last = 0;
-	size_t hb_size_cur = 0;
-	char *hb_cur = NULL;
-	char *hb_last = NULL;
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION
 	uint8_t *block;
@@ -290,11 +227,6 @@ ram_console_save_old(struct ram_console_buffer *buffer, const char *bootinfo,
 		bootinfo_size = strlen(bootinfo) + strlen(bootinfo_label);
 	total_size += bootinfo_size;
 
-	hb_size_last = ram_console_hb_last(&hb_last);
-	hb_size_cur  = ram_console_hb_cur(&hb_cur);
-
-	total_size += hb_size_last + hb_size_cur;
-
 	if (dest == NULL) {
 		dest = kmalloc(total_size, GFP_KERNEL);
 		if (dest == NULL) {
@@ -305,22 +237,11 @@ ram_console_save_old(struct ram_console_buffer *buffer, const char *bootinfo,
 	}
 
 	ram_console_old_log = dest;
-
 	ram_console_old_log_size = total_size;
-
-	if ( hb_size_last && hb_last ) {
-		memcpy(ram_console_old_log, hb_last, hb_size_last);
-	}
-
-	memcpy(ram_console_old_log + hb_size_last,
+	memcpy(ram_console_old_log,
 	       &buffer->data[buffer->start], buffer->size - buffer->start);
-	memcpy(ram_console_old_log + hb_size_last + buffer->size - buffer->start,
+	memcpy(ram_console_old_log + buffer->size - buffer->start,
 	       &buffer->data[0], buffer->start);
-
-	if ( hb_size_cur && hb_cur) {
-		memcpy(ram_console_old_log + hb_size_last + buffer->size - buffer->start + buffer->start, hb_cur, hb_size_cur);
-	}
-
 	ptr = ram_console_old_log + old_log_size;
 #ifdef CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION
 	memcpy(ptr, strbuf, strbuf_len);
@@ -334,7 +255,7 @@ ram_console_save_old(struct ram_console_buffer *buffer, const char *bootinfo,
 	}
 }
 
-static int __devinit ram_console_init(struct ram_console_buffer *buffer,
+static int __init ram_console_init(struct ram_console_buffer *buffer,
 				   size_t buffer_size, const char *bootinfo,
 				   char *old_buf)
 {
@@ -345,19 +266,6 @@ static int __devinit ram_console_init(struct ram_console_buffer *buffer,
 	ram_console_buffer = buffer;
 	ram_console_buffer_size =
 		buffer_size - sizeof(struct ram_console_buffer);
-
-#ifdef CONFIG_MACH_G3U
-	hb_ptr = ioremap_nocache(CONFIG_PHYS_OFFSET - SZ_1M, SZ_1M >> 1 );
-#else
-	hb_ptr = ioremap_nocache(CONFIG_PHYS_OFFSET - SZ_2M, SZ_1M);
-#endif
-	if (hb_ptr) {
-#ifdef CONFIG_MACH_G3U
-		hb_ptr_last = hb_ptr + ( SZ_1M >> 2);
-#else
-		hb_ptr_last = hb_ptr + ( SZ_1M >> 1);
-#endif
-	}
 
 	if (ram_console_buffer_size > buffer_size) {
 		pr_err("ram_console: buffer %p, invalid size %zu, "
@@ -380,6 +288,9 @@ static int __devinit ram_console_init(struct ram_console_buffer *buffer,
 	ram_console_par_buffer = buffer->data + ram_console_buffer_size;
 
 
+	/* first consecutive root is 0
+	 * primitive element to generate roots = 1
+	 */
 	ram_console_rs_decoder = init_rs(ECC_SYMSIZE, ECC_POLY, 0, 1, ECC_SIZE);
 	if (ram_console_rs_decoder == NULL) {
 		printk(KERN_INFO "ram_console: init_rs failed\n");
@@ -432,8 +343,12 @@ static int __devinit ram_console_init(struct ram_console_buffer *buffer,
 }
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE_EARLY_INIT
-static int __init ram_console_early_init(void)
+static int ram_console_early_init_done = 0;
+int __init ram_console_early_init(void)
 {
+	if (ram_console_early_init_done) return;
+	ram_console_early_init_done = 1;
+
 	return ram_console_init((struct ram_console_buffer *)
 		CONFIG_ANDROID_RAM_CONSOLE_EARLY_ADDR,
 		CONFIG_ANDROID_RAM_CONSOLE_EARLY_SIZE,
@@ -441,7 +356,7 @@ static int __init ram_console_early_init(void)
 		ram_console_old_log_init_buffer);
 }
 #else
-static int __devinit ram_console_driver_probe(struct platform_device *pdev)
+static int ram_console_driver_probe(struct platform_device *pdev)
 {
 	struct resource *res = pdev->resource;
 	size_t start;
@@ -469,7 +384,7 @@ static int __devinit ram_console_driver_probe(struct platform_device *pdev)
 	if (pdata)
 		bootinfo = pdata->bootinfo;
 
-	return ram_console_init(buffer, buffer_size, bootinfo, NULL);
+	return ram_console_init(buffer, buffer_size, bootinfo, NULL/* allocate */);
 }
 
 static struct platform_driver ram_console_driver = {
@@ -487,11 +402,133 @@ static int __init ram_console_module_init(void)
 }
 #endif
 
+#ifdef CONFIG_MDM9K_ERROR_CORRECTION
+/*
+ * check rpc link
+ * stop checking if 1. link establishs. 2. link did not establish after 35 seconds.
+ */
+static void rpc_check_func(struct work_struct *work)
+{
+	struct rpc_link *rpc;
+	static int count = 0;
+
+	if (count++ >= 35) {
+		printk(KERN_ERR "MDM9K_ERROR_CORRECTION fail due to RPC connection is not ready\n");
+		return;
+	}
+
+	rpc = container_of(work, struct rpc_link, dwork.work);
+	rpc->rpc_client = oem_rapi_client_init();
+
+	if (IS_ERR(rpc->rpc_client)) {
+		schedule_delayed_work(&rpc->dwork, msecs_to_jiffies(1000));
+		return;
+	} else {
+		RPC_READY = 1;
+		wake_up(&rpc->rpcwq);
+	}
+}
+
+/*
+ * Get error message form mdm9k.
+ * MDM9K_CHECK_ERROR, and input number(0,1) are confirmed by radio team.
+ */
+void query_error_message(struct msm_rpc_client *rpc_client, char *buf, int check_number)
+{
+	struct oem_rapi_client_streaming_func_arg arg;
+	struct oem_rapi_client_streaming_func_ret ret;
+	int err, ret_len;
+	char input;
+
+	err = 0;
+	ret_len = MDM9K_BUFF_SIZE;
+	input = check_number;
+	arg.event = MDM9K_CHECK_ERROR;
+	arg.cb_func = NULL;
+	arg.handle = (void *)0;
+	arg.in_len = 1;
+	arg.input = &input;
+	arg.out_len_valid = 1;
+	arg.output_valid = 1;
+	arg.output_size = MDM9K_BUFF_SIZE;
+	ret.out_len = &ret_len;
+	ret.output = NULL;
+	err = oem_rapi_client_streaming_function(rpc_client, &arg, &ret);
+	if (err) {
+		printk(KERN_ERR "ram_console: Receive data from modem failed: err = %d\n", err);
+	} else if (!*ret.out_len) {
+		if (check_number == 0)
+			strncat(buf, "[SQA][ARM] no error occur\n", MDM9K_BUFF_SIZE);
+		else if (check_number == 1)
+			strncat(buf, "[SQA][QDSP6] no error occur\n", MDM9K_BUFF_SIZE);
+		printk(KERN_INFO "ram_console: query mdm9k message %d - out_len = 0\n", check_number);
+		kfree(ret.out_len);
+	} else {
+		printk(KERN_INFO "ram_console: query mdm9k message %d - out_len = %d\n", check_number, *ret.out_len);
+		if (check_number == 0)
+			strncpy(buf, ret.output, *ret.out_len);
+		else if (check_number == 1)
+			strncat(buf, ret.output, *ret.out_len);
+		kfree(ret.out_len);
+		kfree(ret.output);
+	}
+}
+/*
+ * Put error message in buf, and return buf length.
+ * due to RPC link need a long time to create (35~50 seconds).
+ * rpc_check_func() is used to check the link every 1 second(stop after 35 retries).
+ */
+int get_mdm9k_error_message(char *buf)
+{
+	struct rpc_link rpc;
+
+	rpc.rpc_client = ERR_PTR(-ENOMEM);
+
+	if (RPC_READY) {
+		rpc.rpc_client = oem_rapi_client_init();
+	} else {
+		INIT_DELAYED_WORK(&rpc.dwork, rpc_check_func);
+		schedule_delayed_work(&rpc.dwork, msecs_to_jiffies(25000));
+		init_waitqueue_head(&rpc.rpcwq);
+		wait_event_timeout(rpc.rpcwq, RPC_READY == 1, msecs_to_jiffies(70000));
+		flush_delayed_work(&rpc.dwork); /* avoid RPC_READY is set by others after schedule rpc.dwork */
+	}
+
+	if (IS_ERR(rpc.rpc_client)) {
+		strcpy(buf, "[mdm9k] MDM9K_ERROR_CORRECTION fail due to RPC link is not ready\n");
+		return strlen(buf);
+	}
+
+	printk(KERN_INFO "ram_console: RPC client ready...\n");
+	query_error_message(rpc.rpc_client, buf, 0);
+	query_error_message(rpc.rpc_client, buf, 1);
+	oem_rapi_client_close();
+	return strlen(buf);
+}
+#endif
+
 static ssize_t ram_console_read_old(struct file *file, char __user *buf,
 				    size_t len, loff_t *offset)
 {
 	loff_t pos = *offset;
 	ssize_t count;
+
+#ifdef CONFIG_MDM9K_ERROR_CORRECTION
+	if (pos == ram_console_old_log_size) {
+		char mdm9k_buf[256];
+		printk(KERN_INFO "ram_console: MDM9K error log collection start...\n");
+		memset(mdm9k_buf, 0, 256);
+		count = get_mdm9k_error_message(mdm9k_buf);
+		if (count == 0)
+			return 0;
+		if (copy_to_user(buf, mdm9k_buf, count))
+			return -EFAULT;
+
+		*offset += count;
+		printk(KERN_INFO "ram_console: MDM9K error log collection stop...\n");
+		return count;
+	}
+#endif
 
 	if (pos >= ram_console_old_log_size)
 		return 0;
